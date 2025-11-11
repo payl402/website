@@ -19,13 +19,13 @@ This demonstrates the core flow of L402 for "pay-as-you-go" access to digital se
 ## **Architecture**
 ![L402 Architecture](./src/assets/architecture.png)
 
-* **L402 Client**
+* **L402 Client**   
 The website includes a simple L402 client implementation that connects to the L402 Gateway and a launchpad to handle payment challenges and token management.
-
-* **L402 Gateway**
+  
+* **L402 Gateway**  
 The first production L402 payment gateway by L402 Labs that acts as the "paywall".  
-
-* **L402 Server**
+  
+* **L402 Server**  
 The launchpad as a L402 service at backend simulates a protected resource that requires L402 payments for access.
 
 
