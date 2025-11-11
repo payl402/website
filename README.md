@@ -17,7 +17,7 @@ The "Launchpad" demo provides a hands-on experience for users to:
 This demonstrates the core flow of L402 for "pay-as-you-go" access to digital services.
 
 ## **Architecture**
-![L402 Architecture](./assets/architecture.png)
+![L402 Architecture](./src/assets/architecture.png)
 
 * **L402 Client**
 The website includes a simple L402 client implementation that connects to the L402 Gateway and a launchpad to handle payment challenges and token management.
