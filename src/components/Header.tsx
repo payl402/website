@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import L402Logo from '@/assets/logo.png';
 
 interface HeaderProps {
   onLoginClick: () => void;
@@ -27,12 +28,11 @@ export default function Header({ onLoginClick, onSignUpClick, onLogoClick, isLog
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={onLogoClick}
           >
-            <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <div className="h-8 flex items-center">
-              <span className="text-white text-sm text-[20px] font-bold">L402 Labs</span>
-            </div>
+            <img 
+              src={L402Logo} 
+              alt="Logo" 
+              className="h-8 w-auto"
+            />
           </div>
         </div>
 

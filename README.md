@@ -1,8 +1,8 @@
-# **L402 Labs Website & L402 Protocol Launchpad**
+# **Website & Launchpad**
 
-L402 Labs official website and a demo launchpad for L402 protocol.
+PayL402.com official website and a demo launchpad for L402 protocol.
 
-This project serves as both the public face of L402 Labs and a working example of how to implement the L402 (Lightning 402\) standard for metered, an\_d instant API payments.
+This project serves as both the public face of PayL402.com and a working example of how to implement the L402 (Lightning 402\) standard for metered, an\_d instant API payments.
 
 
 ## **The Launchpad: A Demo Environment**
@@ -23,7 +23,7 @@ This demonstrates the core flow of L402 for "pay-as-you-go" access to digital se
 The website includes a simple L402 client implementation that connects to the L402 Gateway and a launchpad to handle payment challenges and token management.
   
 * **L402 Gateway**  
-The first production L402 payment gateway by L402 Labs that acts as the "paywall".  
+The production L402 payment gateway that acts as the "paywall".  
   
 * **L402 Server**  
 The launchpad as a L402 service at backend simulates a protected resource that requires L402 payments for access.

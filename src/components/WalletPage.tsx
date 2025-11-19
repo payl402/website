@@ -262,6 +262,7 @@ export default function WalletPage({ userEmail, onLogout, onLogoClick, onReceive
                                         variant="outline"
                                         className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-100 transition duration-150 rounded-lg"
                                         onClick={onSendClick}
+                                        disabled
                                     >
                                         <ArrowUpRight className="w-4 h-4 mr-1" />
                                         Withdraw

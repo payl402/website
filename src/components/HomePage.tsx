@@ -2,12 +2,14 @@ import { useState } from 'react';
 import Header from "./Header";
 import { Button } from "./ui/button";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import architectureDiagram from "asset/architecture.png";
+import architectureDiagram from 'asset/architecture.png';
+import L402Logo from '@/assets/logo.png';
 import { toast } from "sonner@2.0.3";
 import { Zap, AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Buy, PaymentRequest } from '../libs/api_service';
 import { PayInvoice } from '../libs/api_gateway';
+
 
 interface HomePageProps {
   onLoginClick: (source: "buy" | "header") => void;
@@ -41,10 +43,10 @@ export default function HomePage({
     setIsLoading(true);
     
     try {
-        const buyResponse = await Buy("L402", 100); // Buying L402 for 100 sats
+        const buyResponse = await Buy("L402", 10); // Buying L402 for 10 sats
 
         if (buyResponse.code === 402) {
-            toast.error("Payment Required (402). Fetching invoice...");
+            toast.error("Payment required (402). Fetching payment details...");
 
             // Call PAY_REQUEST interface to get the payment invoice
             const payRequestResponse = await PaymentRequest("0", "lightning", buyResponse.data.payment_context_token, "bitcoin", "sats");
@@ -170,12 +172,18 @@ export default function HomePage({
                     Service Name:
                   </span>
                   <span className="text-slate-900">L402 Launchpad</span>
+                  <span 
+                      className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-300 shadow-sm whitespace-nowrap"
+                      title="This service is running on the Bitcoin Signet network."
+                  >
+                      Signet
+                  </span>                  
                 </div>               
                 <p className="text-slate-600 text-sm mb-2">
                   This is a demo implementing a launchpad via L402 to experience the Lightning payment speed.
                 </p>
                 <p className="text-slate-600 text-xs italic">
-                  <span className="font-medium text-amber-700 not-italic">Warning:</span> Clicking "Buy" will deduct 100 sats from your connected wallet without further confirmation.
+                  <span className="font-medium text-amber-700 not-italic">Warning:</span> Clicking "Buy" will deduct 10 sats from your connected wallet without further confirmation.
                 </p>
               </div>
 
@@ -222,7 +230,7 @@ export default function HomePage({
                   <>
                     <span className="text-lg">Buy L402</span>
                     <span className="ml-2 text-xs text-blue-400">
-                      (with 100 sats)
+                      (with 10 sats)
                     </span>
                   </>
                 )}
@@ -237,11 +245,13 @@ export default function HomePage({
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
+              <img 
+                src={L402Logo} 
+                alt="Logo" 
+                className="h-8 w-auto"
+              />                
               <div>
-                <div className="text-white mb-1">L402 Labs</div>
+                <div className="text-white mb-1">PayL402.com</div>
                 <p className="text-slate-300 text-sm">
                   AI payment infra via Lightning
                 </p>

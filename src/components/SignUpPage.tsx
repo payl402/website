@@ -1,4 +1,4 @@
-import { useState,useMemo } from 'react';
+import { useState,useMemo,useEffect } from 'react';
 import Header from './Header';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -6,7 +6,76 @@ import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { cn } from './ui/utils';
 import { SignUp, Login, ReLoginError } from '../libs/api_gateway';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+// --- Password Validation Logic ---
+const MIN_PASSWORD_LENGTH = 8; 
+
+interface PasswordStrengthResult {
+  isValid: boolean;
+  messages: { text: string; passed: boolean }[];
+}
+
+/**
+ * Checks password against strict rules: min 8 chars, must contain U/L/N/S.
+ */
+const checkPasswordStrength = (password: string): PasswordStrengthResult => {
+  if (!password) {
+    return {
+        isValid: false,
+        messages: [
+            { text: `At least ${MIN_PASSWORD_LENGTH} characters long`, passed: false },
+            { text: 'Contains at least one lowercase letter (a-z)', passed: false },
+            { text: 'Contains at least one uppercase letter (A-Z)', passed: false },
+            { text: 'Contains at least one number (0-9)', passed: false },
+            { text: 'Contains at least one special character (!@#$%, etc.)', passed: false },
+        ]
+    };
+  }
+
+  const messages: { text: string; passed: boolean }[] = [];
+  
+  const isLengthValid = password.length >= MIN_PASSWORD_LENGTH;
+  messages.push({ 
+    text: `At least ${MIN_PASSWORD_LENGTH} characters long (${password.length}/${MIN_PASSWORD_LENGTH})`, 
+    passed: isLengthValid 
+  });
+
+  const hasLower = /[a-z]/.test(password);
+  messages.push({ 
+    text: 'Contains at least one lowercase letter (a-z)', 
+    passed: hasLower 
+  });
+
+  const hasUpper = /[A-Z]/.test(password);
+  messages.push({ 
+    text: 'Contains at least one uppercase letter (A-Z)', 
+    passed: hasUpper 
+  });
+
+  const hasNumber = /[0-9]/.test(password);
+  messages.push({ 
+    text: 'Contains at least one number (0-9)', 
+    passed: hasNumber 
+  });
+
+  const hasSymbol = /[^a-zA-Z0-9\s]/.test(password);
+  messages.push({ 
+    text: 'Contains at least one special character (!@#$%, etc.)', 
+    passed: hasSymbol 
+  });
+  
+  const isValid = isLengthValid && hasLower && hasUpper && hasNumber && hasSymbol;
+
+  return { 
+    isValid: isValid, 
+    messages: messages 
+  };
+};
+
+// ==========================================================
+// SignupPage Component
+// ==========================================================
 
 interface SignupPageProps {
   onBack: () => void;
@@ -20,29 +89,54 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
   const [isHuman, setIsHuman] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
-  const [currentView, setCurrentView] = useState<'signup' | 'home'>('signup');
-  const [loggedInUserEmail, setLoggedInUserEmail] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false); // New state for focus
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
-  // --- Validation Logic ---
-
-  const passwordValid = useMemo(() => password.length >= 8, [password]);
+  // Calculate password strength result based on the strict rules
+  const strengthResult = useMemo(() => checkPasswordStrength(password), [password]);
+  const passwordValid = strengthResult.isValid;
   const passwordsMatch = useMemo(() => password === confirmPassword, [password, confirmPassword]);
 
+  // Handle confirmation password validation and clean up submission messages
+  useEffect(() => {
+    if (confirmPassword.length > 0 && !passwordsMatch) {
+      setConfirmPasswordError('Passwords do not match.');
+    } else {
+      setConfirmPasswordError('');
+    }
+
+    // Clean up generic submit messages if conditions are now met
+    const isPasswordError = submitMessage.includes('Password') || submitMessage.includes('Passwords');
+    if (passwordValid && passwordsMatch && isPasswordError) {
+        setSubmitMessage('');
+    }
+    
+    // Clear confirm password error if the field is empty
+    if (confirmPassword.length === 0) {
+        setConfirmPasswordError('');
+    }
+
+  }, [password, confirmPassword, passwordValid, passwordsMatch, submitMessage]);  
+
+  // Check overall button disabled state
   const isButtonDisabled = useMemo(() => {
+    // The button is disabled if any required field is missing OR if the password/match is invalid.
     return !email || !password || !confirmPassword || !isHuman || !passwordValid || !passwordsMatch;
   }, [email, password, confirmPassword, isHuman, passwordValid, passwordsMatch]);
 
-  const validatePasswords = () => {
+  /**
+   * Final validation check before API submission.
+   */
+  const validateAndSetErrors = () => {
     if (!passwordValid) {
-      setSubmitMessage('Password must be at least 8 characters long.');
+      setSubmitMessage('Password does not meet all security requirements. Please check the list above.');
       return false;
     }
     if (!passwordsMatch) {
       setSubmitMessage('Passwords do not match.');
       return false;
     }
+    setSubmitMessage('');
     return true;
   };
 
@@ -58,7 +152,7 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
       return;
     }
 
-    if (!validatePasswords()) {
+    if (!validateAndSetErrors()) {
       return;
     }
 
@@ -68,10 +162,9 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
       await SignUp(email, password);
       
       // Auto-Login after successful sign up
-      const tokenResponse = await Login(email, password);
+      await Login(email, password);
 
-      setSubmitMessage('Sign up successful! Redirecting to home page...');
-      setLoggedInUserEmail(email);
+      setSubmitMessage('Success: Sign up successful! Redirecting to home page...');
 
       setTimeout(() => {
         onBack();
@@ -88,9 +181,10 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
     }
   };
 
+  const showPasswordRequirements = isPasswordFocused || (password.length > 0 && !passwordValid);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-slate-50 font-inter">
       <Header onLoginClick={onLoginClick} onSignUpClick={onBack} onLogoClick={onBack} />
       
       <main className="max-w-lg mx-auto px-6 py-16">
@@ -101,7 +195,7 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Input */}
           <div>
-            <Label htmlFor="email" className="text-slate-900 mb-2 block">
+            <Label htmlFor="email" className="text-slate-900 mb-2 block font-medium">
               Email address
             </Label>
             <Input
@@ -116,26 +210,46 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
 
           {/* Password Input */}
           <div>
-            <Label htmlFor="password" className="text-slate-900 mb-2 block">
-              Password (Min 8 characters)
+            <Label htmlFor="password" className="text-slate-900 mb-2 block font-medium">
+              Password
             </Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onBlur={validatePasswords}
-              className={cn("w-full rounded-lg", passwordError && "border-red-500")}
-              placeholder="••••••••"
+              onFocus={() => setIsPasswordFocused(true)}
+              onBlur={() => setIsPasswordFocused(false)}
+              className={cn("w-full rounded-lg", password.length > 0 && !passwordValid ? "border-red-500" : "border-slate-300")}
+              placeholder="Set a strong password"
             />
-            {passwordError && (
-              <p className="mt-1 text-sm text-red-600 font-medium">{passwordError}</p>
+            
+            {/* Password Rules Feedback - Visible on focus or if invalid */}
+            {showPasswordRequirements && (
+              <div className="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm">
+                <p className="text-slate-700 font-semibold mb-2">Password requirements:</p>
+                <ul className="space-y-1">
+                  {strengthResult.messages.map((item, index) => (
+                    <li key={index} className={cn("flex items-center text-xs transition-colors duration-150", item.passed ? "text-green-600" : "text-red-500")}>
+                      {item.passed ? <CheckCircle className="h-3 w-3 mr-2 shrink-0" /> : <XCircle className="h-3 w-3 mr-2 shrink-0" />}
+                      {item.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Display error if password is not valid on form submit attempt (only if requirements are hidden) */}
+            {password.length > 0 && !passwordValid && !showPasswordRequirements && (
+              <p className="mt-1 text-sm text-red-600 font-medium flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1"/> Your password is not strong enough.
+              </p>
             )}
           </div>
 
           {/* Confirm Password Input */}
           <div>
-            <Label htmlFor="confirm-password" className="text-slate-900 mb-2 block">
+            <Label htmlFor="confirm-password" className="text-slate-900 mb-2 block font-medium">
               Confirm Password
             </Label>
             <Input
@@ -143,16 +257,18 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              onBlur={validatePasswords}
-              className={cn("w-full rounded-lg", confirmPasswordError && "border-red-500")}
-              placeholder="••••••••"
+              onBlur={validateAndSetErrors}
+              className={cn("w-full rounded-lg", confirmPasswordError ? "border-red-500" : "border-slate-300")}
+              placeholder="Re-enter your password"
             />
             {confirmPasswordError && (
-              <p className="mt-1 text-sm text-red-600 font-medium">{confirmPasswordError}</p>
+              <p className="mt-1 text-sm text-red-600 font-medium flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1"/>{confirmPasswordError}
+              </p>
             )}
           </div>
 
-          {/* hCaptcha */}
+          {/* hCaptcha (Mock) */}
           <div className="border border-slate-300 rounded-lg p-4 bg-slate-50">
             <div className="flex items-center gap-3">
               <Checkbox 
@@ -195,7 +311,7 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
             type="submit"
             isLoading={isLoading}
             disabled={isButtonDisabled}
-            className="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 rounded-lg font-bold shadow-lg"
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 rounded-lg font-bold shadow-lg transition transform hover:scale-[1.01]"
           >
             Sign up
           </Button>
@@ -203,11 +319,11 @@ export default function SignupPage({ onBack, onLoginClick }: SignupPageProps) {
             Already have an account? <a 
             href="#"
             onClick={(e) => { e.preventDefault(); onLoginClick(); }}
-            className="text-blue-600 hover:underline"
+            className="text-blue-600 hover:underline font-medium"
             >
               Sign in
             </a>
-          </p>          
+          </p>
         </form>
         </div>
       </main>
